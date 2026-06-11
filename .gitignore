@@ -177,5 +177,4 @@ pyvenv.cfg
 /static/debug*
 /static/django*
 
-database.py
 /backup
