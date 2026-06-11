@@ -5,3 +5,6 @@ openpyxl
 xlsxwriter
 ttkbootstrap
 tksheet
+tkcalendar
+sqlalchemy
+psycopg2-binary
