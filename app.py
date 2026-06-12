@@ -88,7 +88,7 @@ def to_csv(df: pd.DataFrame):
     df.to_csv(output, index=False)
 
 def load_with_index_mapping(filepath: str, source: str, 
-                            filtered_date: Optional[Union[str, date, datetime]] = None, type = None) -> pd.DataFrame:
+                            filtered_date: Optional[Union[str, date, datetime]] = None, type = None, datetime_format = "%Y-%m-%d %H:%M") -> pd.DataFrame:
     mapping: dict = shipped_order_index_mappings[source]
 
     # read only needed columns
@@ -113,10 +113,9 @@ def load_with_index_mapping(filepath: str, source: str,
     for col in df.columns:
         if col in datetime_fields and col in df:
             df[col] = pd.to_datetime(
-                df[col],
+                df[col].astype(str).str.strip(),
                 errors="raise",
-                format="mixed",
-                dayfirst=True
+                format=datetime_format,
             )
 
     # filter by shipped_time if requested
@@ -259,7 +258,7 @@ def insertOrUpdateOrders(sp_filter, tts_filter, filtered_date: Optional[Union[st
             shutil.move(os.path.join(sp), os.path.join('backup', sp))
 
         for tts in tts_files:
-            df = load_with_index_mapping(tts, 'tts', filtered_date)
+            df = load_with_index_mapping(tts, 'tts', filtered_date, datetime_format="%d/%m/%Y %H:%M:%S")
 
             # --- NEW: extract and upsert order details ---
             try:
@@ -284,7 +283,7 @@ def insertOrUpdateEarnings(sp_filter, tts_filter, filtered_date: Optional[Union[
     
     try:
         for sp in sp_files:
-            df = load_with_index_mapping(sp, 'sp_income', filtered_date)
+            df = load_with_index_mapping(sp, 'sp_income', filtered_date, datetime_format="%Y-%m-%d %H:%M:%S")
             
             mask = df['type'] == 'Điều chỉnh'
             df.loc[mask, 'order_id'] = df.loc[mask, 'detail'].apply(
@@ -296,7 +295,7 @@ def insertOrUpdateEarnings(sp_filter, tts_filter, filtered_date: Optional[Union[
             shutil.move(os.path.join(sp), os.path.join('backup', sp))
 
         for tts in tts_files:
-            df = load_with_index_mapping(tts, 'tts_income', filtered_date, type)
+            df = load_with_index_mapping(tts, 'tts_income', filtered_date, type, datetime_format="%Y/%m/%d")
             tts_orders = transform_to_order_model(df, schema_type=OrderUpdate)
             update_earnings(tts_orders)
             shutil.move(os.path.join(tts), os.path.join('backup', tts))
